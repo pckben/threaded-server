@@ -25,15 +25,7 @@ void DecoderRunner::DoRun() {
 	Decode();
 }
 
-#include <iostream>
-using namespace std;
 void DecoderRunner::Decode() {
 	// TODO
-	cout << "Decoder started" << endl;
-	char msg[100];
-	socket_->Receive(msg, 10);
-	cout << "Received: " << string(msg) << endl;
-	socket_->Send(msg, 10);
-	cout << "Sent: " << string(msg) << endl;
 
 }
