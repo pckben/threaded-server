@@ -1,7 +1,7 @@
 #ifndef SOCKET_H
 #define SOCKET_H
 
-namespace ntu {
+namespace pckben {
 	/**
 	 * Wraps over a UNIX socket and provide
 	 * helper functions to send/receive data.

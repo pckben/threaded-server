@@ -3,12 +3,13 @@
 
 #define MAXPENDING 5
 
-namespace ntu {
+namespace pckben {
 	/**
 	 * Abstract Server class to listen to incoming requests.
 	 */
 	class Server {
 		public:
+			virtual ~Server() { }
 
 			void Start(int port);
 

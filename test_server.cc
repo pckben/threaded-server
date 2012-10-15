@@ -1,7 +1,7 @@
-#include "Thread.h"
-#include "ThreadPool.h"
-#include "Runner.h"
-#include "Server.h"
+#include "Worker.h"
+#include "TaskDispatcher.h"
+#include "Task.h"
+#include "ThreadedServer.h"
 #include "Socket.h"
 #include <iostream>
 #include <cstdlib>
@@ -9,44 +9,21 @@
 #define N_THREADS 5
 
 using namespace std;
-using namespace ntu;
+using namespace pckben;
 
-class TestThread;
-class TestRunner;
+class TestTask;
 class TestServer;
 
-class TestThread : public Thread {
-		public:
-			TestThread(TestRunner* runner) {
-				runner_ = runner;
-			}
-
-			TestRunner* GetRunner() { return runner_; }
-
-		private:
-			TestRunner* runner_;
-
-};
-
-
-class TestRunner : public Runner {
+class TestTask : public Task {
 	public:
-		TestRunner() : socket_(0) { }
-		~TestRunner() {
-			if (socket_) 
-				delete socket_;
-		}
-
-		void SetSocket(int sock) {
-			if (socket_)
-				delete socket_;
-
+		TestTask(int sock) {
 			socket_ = new Socket(sock);
 		}
+		virtual ~TestTask() {
+			delete socket_;
+		}
 
-
-	protected:
-		void DoRun() {
+		void Execute() {
 			cout << "Runner started" << endl;
 			char msg[100];
 			socket_->Receive(msg, 10);
@@ -60,43 +37,15 @@ class TestRunner : public Runner {
 };
 
 
-class TestServer : public Server {
+class TestServer : public ThreadedServer {
 	public:
-		TestServer(int nThreads) {
-			nThreads_ = nThreads;
-			pool_ = new ThreadPool(nThreads);
-
-			for (int i=0; i<nThreads; i++) {
-				runner_[i] = new TestRunner();
-				thread_[i] = new TestThread(runner_[i]);
-				pool_->AddThread(thread_[i]);
-			}
-		}
-
-		~TestServer() {
-			for (int i=0; i<nThreads_; i++) {
-				delete runner_[i];
-				delete thread_[i];
-			}
-		}
+		TestServer(int nThreads) : ThreadedServer(nThreads) { }
+		virtual ~TestServer() { }
 
 	protected:
-		void HandleClient(int sock) {
-			// get available thread, blocked if no thread available
-			Thread* thread = pool_->GetThread();
-			// Get the corresponding runner
-			TestRunner* runner = ((TestThread*)thread)->GetRunner();
-			// pass sock to decoder
-			runner->SetSocket(sock);
-			// run on a the given thread
-			runner->Run(thread);
+		Task* CreateTask(int sock) {
+			return new TestTask(sock);
 		}
-
-	private:
-		int nThreads_;
-		ThreadPool* pool_;
-		Thread* thread_[128];
-		TestRunner* runner_[128];
 };
 
 
@@ -108,8 +57,9 @@ int main(int argc, char* argv[]) {
 
 	int port = atoi(argv[1]);
 
-	TestServer server(N_THREADS);
-	server.Start(port);
+	Server* server = new TestServer(N_THREADS);
+	server->Start(port);
+	delete server;
 
 	return 0;
 }

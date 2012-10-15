@@ -9,7 +9,7 @@
 
 #define BUFFSIZE 32
 
-using namespace ntu;
+using namespace pckben;
 using namespace std;
 
 Socket::Socket(int socket) 

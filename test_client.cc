@@ -2,7 +2,7 @@
 #include <iostream>
 #include <cstdlib>
 
-using namespace ntu;
+using namespace pckben;
 using namespace std;
 
 int main(int argc, char* argv[]) {
