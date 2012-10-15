@@ -22,10 +22,8 @@ namespace pckben {
 			 * resources.
 			 *
 			 * NOTE: If the worker is being destroyed before
-			 * the thread has started, the thread will
-			 * wait forever! Thus, the main thread should
-			 * make sure it should pause for sometime
-			 *
+			 * a task assigned to him being attempted, the
+			 * task will be discarded and destroyed.
 			 */
 			~Worker(); 
 
@@ -52,24 +50,11 @@ namespace pckben {
 			pthread_t thread_;
 			pthread_attr_t thread_attr_;
 
-			// conditional variable to wait for task
-			// assigned event.
+			// conditional variable to wait for task_assigned event.
 			pthread_cond_t task_assigned_cond_;
 			pthread_mutex_t task_assigned_mutex_;
 
-			// conditional variable to acknowledge the
-			// task dispatcher that the task has been
-			// received by the worker thread. This is
-			// to prevent deadlock when the Worker is
-			// destroyed immediately after being
-			// assigned a new task.
-			pthread_cond_t task_acked_cond_;
-			pthread_mutex_t task_acked_mutex_;
-
-			// conditional variable to wait for thread
-			// to fully started.
-			pthread_cond_t thread_started_cond_;
-			pthread_mutex_t thread_started_mutex_;
+			bool enabled_;	// set to false and signal the task_assigned event to stop the thread.
 
 			Task* task_;
 	};

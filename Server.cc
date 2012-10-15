@@ -30,7 +30,7 @@ void Server::Start(int port) {
 		Die("Failed to bind the server socket");
 	}
 	/* Listen on the server socket */
-	if (listen(listener_sock_, MAXPENDING) < 0) {
+	if (listen(listener_sock_, SOMAXCONN) < 0) {
 		Die("Failed to listen on server socket");
 	}
 

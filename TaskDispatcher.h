@@ -1,16 +1,14 @@
 #ifndef TASKDISPATCHER_H
 #define TASKDISPATCHER_H
 
-#define MAX_N_THREAD	128
-
-#include "semaphore.h"
+#include "Task.h"
 
 namespace pckben {
 
-	class Task;
 	class Worker;
+	class Semaphore;
 
-	class TaskDispatcher {
+	class TaskDispatcher : public TaskObserver {
 		public:
 
 			/**
@@ -32,9 +30,11 @@ namespace pckben {
 			 */
 			void Dispatch(Task* task);
 
+			void OnTaskDone(Task* task);
+
 		private:
 			int size_;
-			sem_t semaphore_;
+			Semaphore* semaphore_;
 			Worker** worker_;
 	};
 }

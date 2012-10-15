@@ -1,8 +1,6 @@
 #ifndef SERVER_H
 #define SERVER_H
 
-#define MAXPENDING 5
-
 namespace pckben {
 	/**
 	 * Abstract Server class to listen to incoming requests.
