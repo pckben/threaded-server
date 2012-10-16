@@ -26,7 +26,7 @@ class TestTask : public Task {
 			char msg[100];
 			socket_->Receive(msg, 10);
 			cout << "Received: " << string(msg) << endl;
-			usleep((rand() % 20)*100000 + 1000000); // sleep 1-3s
+			usleep((rand() % 10)*100000 + 1000000); // sleep 1-2s
 			socket_->Send(msg, 10);
 			cout << "Sent: " << string(msg) << endl;
 		}

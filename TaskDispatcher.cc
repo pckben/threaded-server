@@ -10,7 +10,7 @@ using namespace pckben;
 TaskDispatcher::TaskDispatcher(int size) {
 	size_ = size;
 	semaphore_ = new Semaphore(size);
-	printf("Initializing, semaphore value = %d\n", semaphore_->GetValue());
+	//printf("Initializing, semaphore value = %d\n", semaphore_->GetValue());
 
 	worker_  = new Worker*[size];
 	for (int i=0; i<size; i++)
@@ -27,7 +27,7 @@ TaskDispatcher::~TaskDispatcher() {
 void TaskDispatcher::Dispatch(Task* task) {
 	// wait until at least a thread is free
 	semaphore_->Wait();
-	printf("Dispatching, semaphore value = %d\n", semaphore_->GetValue());
+	//printf("Dispatching, semaphore value = %d\n", semaphore_->GetValue());
 
 	// loop through the workers and try assigning
 	// the task, there must be at least 1 free
@@ -45,7 +45,7 @@ void TaskDispatcher::Dispatch(Task* task) {
 }
 
 void TaskDispatcher::OnTaskDone(Task* task) {
-	printf("Releasing semaphore...\n");
+	//printf("Releasing semaphore...\n");
 	semaphore_->Signal();
-	printf("Released, semaphore value = %d\n", semaphore_->GetValue());
+	//printf("Released, semaphore value = %d\n", semaphore_->GetValue());
 }
