@@ -1,4 +1,4 @@
-#ifndef THREAD_H
+#ifndef WORKER_H
 #define WORKER_H
 
 #include <pthread.h>
@@ -61,4 +61,4 @@ namespace pckben {
 
 	void* worker_func(void* args);
 }
-#endif /* THREAD_H */
+#endif /* WORKER_H */

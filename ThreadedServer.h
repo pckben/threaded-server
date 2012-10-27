@@ -1,4 +1,4 @@
-#ifndef DECODESERVER_H
+#ifndef THREADEDSERVER_H
 #define THREADEDSERVER_H
 
 #include "Server.h"
@@ -41,4 +41,4 @@ namespace pckben {
 	};
 }
 
-#endif /* DECODESERVER_H */
+#endif /* THREADEDSERVER_H */

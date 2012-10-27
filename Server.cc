@@ -4,6 +4,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <netinet/in.h>
+#include "stdio.h"
 
 using namespace std;
 using namespace pckben;
