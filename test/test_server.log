@@ -1,0 +1,42 @@
+Starting a multi-threading server with 4 workers.
+Listening on 0.0.0.0:12345
+Client connected: 127.0.0.1
+Client connected: 127.0.0.1
+working
+Received: 1111111111
+working
+Received: 0000000000
+Client connected: 127.0.0.1
+working
+Received: 2222222222
+Client connected: 127.0.0.1
+Client connected: 127.0.0.1
+working
+Received: 4444444444
+Sent: 2222222222
+working
+Client connected: 127.0.0.1
+Received: 3333333333
+Sent: 1111111111
+working
+Received: 5555555555
+Client connected: 127.0.0.1
+Sent: 4444444444
+working
+Received: 6666666666
+Client connected: 127.0.0.1
+Sent: 0000000000
+working
+Received: 7777777777Client connected: 127.0.0.1
+
+Sent: 3333333333
+working
+Received: 8888888888
+Client connected: 127.0.0.1
+Sent: 5555555555
+working
+Received: 9999999999
+Sent: 6666666666
+Sent: 8888888888
+Sent: 7777777777
+Sent: 9999999999

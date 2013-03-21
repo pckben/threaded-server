@@ -1,23 +1,13 @@
-$(CXX)   = g++ -g
-BINDIR   = bin
-BINFILES = $(BINDIR)/test_server \
-		   $(BINDIR)/test_client \
-		   $(BINDIR)/test_worker
+SUBDIRS = src test speechsvr
 
-all: $(BINDIR) test_server test_client test_worker
+all: $(SUBDIRS)
 
-$(BINDIR):
-	mkdir $(BINDIR)
+.PHONY: $(SUBDIRS)
 
-test_server: $(BINDIR) *.cc *.h
-	$(CXX) -o $(BINDIR)/test_server test_server.cc Worker.cc TaskDispatcher.cc Task.cc Server.cc Socket.cc ThreadedServer.cc Semaphore.cc
+subdirs: $(SUBDIRS)
 
-test_client: $(BINDIR) test_client.cc Socket.cc Socket.h
-	$(CXX) -o $(BINDIR)/test_client test_client.cc Socket.cc
-
-test_worker: $(BINDIR) test_worker.cc Task.h Task.cc Worker.cc Worker.h
-	$(CXX) -o $(BINDIR)/test_worker test_worker.cc Worker.cc Task.cc
+$(SUBDIRS):
+	$(MAKE) -C $@
 
 clean:
-	-rm -f $(BINFILES)
-	
+	-for x in $(SUBDIRS); do $(MAKE) -C $$x clean; done
