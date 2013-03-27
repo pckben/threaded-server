@@ -1,34 +1,15 @@
-include ../make.mk
-OBJ = Config.o DecodeWorker.o SpeechServer.o
+include kaldi.mk
+SUBDIRS = online test
+OBJ = Config.o DecodeWorker.o protocol.o SpeechServer.o RemoteAudioSource.o
 OUT = speechsvr speechclient
 
-LIBS = ../threaded-server.a \
-			 $(KALDIROOT)/lat/kaldi-lat.a \
-			 $(KALDIROOT)/decoder/kaldi-decoder.a \
-			 $(KALDIROOT)/feat/kaldi-feature.a \
-			 $(KALDIROOT)/transform/kaldi-transform.a \
-			 $(KALDIROOT)/gmm/kaldi-gmm.a \
-			 $(KALDIROOT)/hmm/kaldi-hmm.a \
-			 $(KALDIROOT)/tree/kaldi-tree.a \
-			 $(KALDIROOT)/matrix/kaldi-matrix.a \
-			 $(KALDIROOT)/util/kaldi-util.a \
-			 $(KALDIROOT)/base/kaldi-base.a \
-			 $(KALDIROOT)/online/kaldi-online.a \
-			 $(FSTROOT)/lib/libfst.a \
-			 -framework Accelerate \
-			 -lm -ldl
+LIBS += ../threaded-server.a online-decoder/online-decoder.a \
 
-CCFLAGS += -I../src \
-					 -DKALDI_DOUBLEPRECISION=0 -DHAVE_POSIX_MEMALIGN \
-					 -Wno-sign-compare -Winit-self \
-					 -DHAVE_EXECINFO_H=1 -DHAVE_CXXABI_H -rdynamic \
-					 -DHAVE_CLAPACK \
-					 -I$(KALDIROOT) \
-					 -I$(FSTROOT)/include \
+CCFLAGS += -I../src -Ionline-decoder \
 
-.PHONY: all test
+.PHONY: all  $(SUBDIRS)
 
-all: test speechsvr speechclient
+all: $(SUBDIRS) speechsvr speechclient
 
 speechsvr: $(OBJ) speechsvr.o
 	$(CC) $(CCFLAGS) -o $@ $(OBJ) speechsvr.o $(LIBS)
@@ -39,9 +20,9 @@ speechclient: $(OBJ) speechclient.o
 %.o: %.cc
 	$(CC) $(CCFLAGS) -c $< -o $@
 
-test:
+$(SUBDIR):
 	$(MAKE) -C $@
 
 clean:
 	-rm -f $(OBJ) $(OUT) speechsvr.o speechclient.o
-	$(MAKE) -C test clean
+	-for x in $(SUBDIRS); do $(MAKE) -C $x clean; done

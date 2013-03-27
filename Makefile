@@ -4,7 +4,7 @@ all: $(SUBDIRS)
 
 .PHONY: $(SUBDIRS)
 
-subdirs: $(SUBDIRS)
+#subdirs: $(SUBDIRS)
 
 $(SUBDIRS):
 	$(MAKE) -C $@
