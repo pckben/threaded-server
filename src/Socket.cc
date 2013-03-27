@@ -43,18 +43,18 @@ void Socket::Connect(char* serveraddr, int port) {
 
 }
 
-void Socket::Send(const char* data, int length) {
+void Socket::Send(const void* data, int length) {
   if (send(socket_, data, length, 0) != length) {
     perror("Mismatch in number of sent bytes");
     exit(1);
   }
 }
 
-void Socket::Receive(char* data, int length) {
+void Socket::Receive(void* data, int length) {
   int received = 0;
   while (received < length) {
     int bytes = 0;
-    if ((bytes = recv(socket_, data + received, length - received, 0)) < 1) {
+    if ((bytes = recv(socket_, (char *)data + received, length - received, 0)) < 1) {
       perror("Failed to receive bytes from remote");
       exit(1);
     }

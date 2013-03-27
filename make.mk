@@ -1,6 +1,6 @@
 CC = g++
-CCFLAGS = -g -O2 -Wall
+CCFLAGS = -g -O2 -Wall \
+					-Wno-sign-compare -Winit-self \
+
 
 GTEST_ROOT = /opt/local
-FSTROOT = /Users/Ben/projects/kaldi/tools/openfst
-KALDIROOT = /Users/Ben/projects/kaldi/src

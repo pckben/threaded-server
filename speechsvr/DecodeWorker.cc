@@ -1,4 +1,5 @@
 #include "DecodeWorker.h"
+#include "RemoteAudioSource.h"
 
 #include <base/kaldi-common.h>
 #include <util/common-utils.h>
@@ -13,6 +14,13 @@
 #include <feat/feature-mfcc.h>
 #include <online/online-cmn.h>
 
+//#include "online/online-feat-input.h"
+#include "online-decoder/online-decodable.h"
+#include "online-decoder/online-faster-decoder.h"
+#include "online-decoder/onlinebin-util.h"
+#include "online-decoder/online-cmn.h"
+#include "online-decoder/online-vad.h"
+
 #include <SocketTask.h>
 #include <Socket.h>
 
@@ -21,6 +29,15 @@ using namespace pckben;
 using namespace std;
 using namespace kaldi;
 using namespace fst;
+
+void SendOutput(Socket *socket, bool end_utterance, string str) {
+  PacketHeader header;
+  header.payload_length = sizeof(bool) + str.length();
+  header.type = DECODE_OUTPUT;
+  socket->Send(&header, sizeof(PacketHeader));
+  socket->Send(&end_utterance, sizeof(bool));
+  socket->Send(str.c_str(), str.length());
+}
 
 string SymbolsToWords(vector<int32> symbols, SymbolTable *symbol_table) {
   string words = "";
@@ -34,6 +51,18 @@ string SymbolsToWords(vector<int32> symbols, SymbolTable *symbol_table) {
   return words;
 }
 
+string GetPartialResult(const std::vector<int32>& words,
+                      const fst::SymbolTable *word_syms) {
+  KALDI_ASSERT(word_syms != NULL);
+  string result = "";
+  for (size_t i = 0; i < words.size(); i++) {
+    string word = word_syms->Find(words[i]);
+    if (word == "")
+      KALDI_ERR << "Word-id " << words[i] <<" not in symbol table.";
+    result += word + " ";
+  }
+  return result;
+}
 
 void LdaTransform(Matrix<BaseFloat> &cmvn,
 		Matrix<BaseFloat> &output,
@@ -87,7 +116,8 @@ DecodeWorker::DecodeWorker(LatticeFasterDecoder *decoder,
                            SymbolTable *symbol_table,
                            float acoustic_scale,
                            float left_context,
-                           float right_context)
+                           float right_context,
+                           VectorFst<StdArc> *decode_fst)
 : decoder_(decoder),
   gmm_(gmm),
   trans_model_(trans_model),
@@ -95,7 +125,8 @@ DecodeWorker::DecodeWorker(LatticeFasterDecoder *decoder,
   symbol_table_(symbol_table),
   acoustic_scale_(acoustic_scale),
   left_context_(left_context),
-  right_context_(right_context)
+  right_context_(right_context),
+  decode_fst_(decode_fst)
 {
   MfccOptions mfcc_opts;
   mfcc_opts.use_energy = false;
@@ -119,11 +150,20 @@ void DecodeWorker::Work() {
   Socket *sock = ((SocketTask *)GetTask())->GetSocket();
 
   // Receive header
-  Packet packet;
-  sock->Receive((char *)&packet.header, sizeof(PacketHeader));
+  PacketHeader header;
+  sock->Receive((char *)&header, sizeof(PacketHeader));
 
-  cout << "Packet received: type=" << packet.header.type
-       << ", length=" << packet.header.payload_length << endl;
+  if (header.type != DECODE_REQUEST)
+    exit(1);
+
+  DecodeRequest req;
+  sock->Receive((char *)&req, header.payload_length);
+
+  cout << "Decode request: "
+       << (req.online_mode ? "online mode" : "file mode") << endl;
+
+  DecodeResponse res = { true };
+  SendPacket(sock, DECODE_ACCEPT, sizeof(DecodeResponse), &res);
 
   Vector<BaseFloat> wave;  // raw wave data
   Matrix<BaseFloat> mfcc_output;
@@ -131,16 +171,18 @@ void DecodeWorker::Work() {
   Matrix<BaseFloat> lda_output;
   string words;
 
-  PacketHeader response_header;
-
-  switch (packet.header.type) {
-    case DATA_WAVE:
+  if (req.online_mode) {
+    OnlineDecode(sock);
+  }
+  else {
+    sock->Receive((char *)&header, sizeof(PacketHeader));
+    if (header.type == DATA_WAVE) {
       // Receive wave
-      wave.Resize(packet.header.payload_length / sizeof(float));
-      cout << "Waiting for " << packet.header.payload_length << " bytes ("
-           << packet.header.payload_length / sizeof(float) << " floats)\n";
-      sock->Receive((char *)wave.Data(), packet.header.payload_length);
-      cout << packet.header.payload_length << " bytes received.\n";
+      wave.Resize(header.payload_length / sizeof(float));
+      cout << "Waiting for " << header.payload_length << " bytes ("
+           << header.payload_length / sizeof(float) << " floats)\n";
+      sock->Receive((char *)wave.Data(), header.payload_length);
+      cout << header.payload_length << " bytes received.\n";
       // Feature extraction
       cout << "Feature extraction...\n";
       mfcc_->Compute(wave, &mfcc_output, NULL);
@@ -153,18 +195,13 @@ void DecodeWorker::Work() {
       cout << "Output: " << words << endl;
 
       // Send back result
-      response_header.payload_length = words.length();
-      response_header.type = DECODE_OUTPUT;
-      sock->Send((char *)&response_header, sizeof(PacketHeader));
-      sock->Send(words.c_str(), words.length());
-      break;
-
-    case DATA_FEATURE:
-      break;
-
-    default:
-      cerr << "Invalid request received.\n";
-      break;
+      SendOutput(sock, true, words);
+    }
+    else if (header.type == DATA_FEATURE) {
+    }
+    else {
+      cerr << "Invalid request received: " << header.type << endl;
+    }
   }
 }
 
@@ -188,4 +225,104 @@ string DecodeWorker::Decode(Matrix<BaseFloat> &features) {
   words = SymbolsToWords(symbols, symbol_table_);
   delete decodable_;
   return words;
+}
+
+void DecodeWorker::OnlineDecode(Socket *sock) {
+
+  const int32 kSampleFreq = 16000;
+  int32 vad_buffer_length_ms = 500;
+  int32 vad_hangover_ms = 500;
+  int32 batch_size = 27;
+  int32 frame_length_ms = 25;
+  int32 frame_shift_ms = 10;
+  float vad_onset_threshold = 400;
+  float vad_offset_threshold = 50;
+  float vad_recover_threshold = 100;
+  int frame_length_samples = frame_length_ms * (kSampleFreq/1000);
+  int frame_shift_samples = frame_shift_ms * (kSampleFreq/1000);
+  int vad_hangover_samples = vad_hangover_ms * (kSampleFreq/1000);
+  int vad_hangover_frames = (vad_hangover_samples - frame_length_samples) / frame_shift_samples + 1;
+  MfccOptions mfcc_opts;
+
+  OnlineFasterDecoderOpts config;
+  string silence_phones_str = "1:2:3:4:5:6:7:8:9:10:11:12:13:14:15";
+  std::vector<int32> silence_phones;
+  if (!SplitStringToIntegers(silence_phones_str, ":", false, &silence_phones))
+    KALDI_ERR << "Invalid silence-phones string " << silence_phones_str;
+  if (silence_phones.empty())
+    KALDI_ERR << "No silence phones given!";
+  VectorFst<LatticeArc> out_fst;
+
+  OnlineFasterDecoder decoder(*decode_fst_, config,
+      silence_phones, *trans_model_);
+
+  RemoteAudioSource audioSource(sock);
+
+  SimpleEnergyVad vad(vad_onset_threshold, vad_offset_threshold, 
+      vad_recover_threshold, vad_hangover_frames);
+
+  OnlineVadFeInput vadMfccInput(&audioSource, mfcc_, &vad,
+      frame_length_samples,
+      frame_shift_samples,
+      vad_buffer_length_ms * (kSampleFreq / 1000));
+
+  OnlineCmvnInput cmvn_input(&vadMfccInput, mfcc_opts.num_ceps, 600);
+  OnlineLdaInput lda_input(&cmvn_input, mfcc_opts.num_ceps, *lda_transform_,
+      left_context_, right_context_);
+  int32 feat_dim = lda_transform_->NumRows();
+  OnlineDecodableDiagGmmScaled decodable(&lda_input, *gmm_, *trans_model_,
+      acoustic_scale_, batch_size,
+      feat_dim, -1);
+
+  // setup VAD-->Decoder event notification
+  OnlineFasterDecoderVadListener vadListener(&decoder);
+  vadMfccInput.AddVadListener(&vadListener);
+
+  OnlineFasterDecoder::DecodeState dstate;
+  string utterance = "";
+
+  while (true) {
+    dstate = decoder.Decode(&decodable);
+
+    if (dstate & (decoder.kEndUtt | decoder.kEndFeats)) {
+      std::vector<int32> word_ids;
+      decoder.FinishTraceBack(&out_fst);
+      fst::GetLinearSymbolSequence(out_fst,
+          static_cast<vector<int32> *>(0), &word_ids,
+          static_cast<LatticeArc::Weight*>(0));
+      string result = GetPartialResult(word_ids, symbol_table_);
+      utterance += result;
+      utterance = "";
+
+      SendOutput(sock, true, result);
+      cerr << result << endl;
+
+    } else if (dstate & (decoder.kEndBatch)) {
+      std::vector<int32> word_ids;
+      if (decoder.PartialTraceback(&out_fst)) {
+        fst::GetLinearSymbolSequence(out_fst,
+            static_cast<vector<int32> *>(0), &word_ids,
+            static_cast<LatticeArc::Weight*>(0));
+        string result = GetPartialResult(word_ids, symbol_table_);
+        utterance += result;
+
+        SendOutput(sock, false, result);
+
+        cerr << result;
+      }
+    }
+
+    /*
+    if (dstate == decoder.kEndFeats)
+      std::cerr << "*";
+    else if (dstate == decoder.kEndBatch) {
+    } else if (dstate == decoder.kEndUtt) {
+      std::cerr << "\n";
+    } else
+      std::cerr << "?";
+    */
+
+    if (dstate == decoder.kEndFeats)
+      break;
+  }
 }

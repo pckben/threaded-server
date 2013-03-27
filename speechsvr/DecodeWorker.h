@@ -4,6 +4,7 @@
 #include "protocol.h"
 #include <Worker.h>
 #include <matrix/kaldi-matrix.h>
+#include <fst/vector-fst.h>
 
 namespace kaldi {
   class LatticeFasterDecoder;
@@ -12,10 +13,15 @@ namespace kaldi {
   class DecodableInterface;
   class Mfcc;
   class OnlineCMN;
+  class OnlineFasterDecoder;
 }
 
 namespace fst {
   class SymbolTable;
+}
+
+namespace pckben {
+  class Socket;
 }
 
 namespace speechsvr {
@@ -28,14 +34,17 @@ namespace speechsvr {
                  fst::SymbolTable *symbol_table,
                  float acoustic_scale,
                  float left_context,
-                 float right_context);
+                 float right_context,
+                 fst::VectorFst<fst::StdArc> *decode_fst);
     virtual ~DecodeWorker();
 
    protected:
     void Work();
     std::string Decode(kaldi::Matrix<kaldi::BaseFloat> &features);
+    void OnlineDecode(pckben::Socket *sock);
 
    private:
+    kaldi::OnlineFasterDecoder *online_decoder_;
     kaldi::LatticeFasterDecoder *decoder_;
     kaldi::DecodableInterface *decodable_;
     kaldi::AmDiagGmm *gmm_;
@@ -47,6 +56,7 @@ namespace speechsvr {
     kaldi::OnlineCMN *cmvn_;
     float left_context_;
     float right_context_;
+    fst::VectorFst<fst::StdArc> *decode_fst_;
   };
 }
 #endif  // SPEECHSVR_DECODEWORKER_H

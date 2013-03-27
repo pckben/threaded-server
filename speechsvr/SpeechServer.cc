@@ -87,5 +87,6 @@ Worker* SpeechServer::CreateWorker() {
   return new DecodeWorker(decoder, gmm_, trans_model_, lda_transform_,
                           symbol_table_,
                           acoustic_scale_,
-                          left_context_, right_context_);
+                          left_context_, right_context_,
+                          fst_);
 }

@@ -14,8 +14,8 @@ namespace pckben {
 
      void Connect(char* server, int port);
 
-     void Send(const char* data, int length);
-     void Receive(char* data, int length);
+     void Send(const void* data, int length);
+     void Receive(void* data, int length);
 
    private:
      int socket_;
