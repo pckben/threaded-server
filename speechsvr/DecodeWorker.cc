@@ -1,4 +1,5 @@
 #include "DecodeWorker.h"
+#include "Config.h"
 #include "RemoteAudioSource.h"
 
 #include <base/kaldi-common.h>
@@ -235,9 +236,12 @@ void DecodeWorker::OnlineDecode(Socket *sock) {
   int32 batch_size = 27;
   int32 frame_length_ms = 25;
   int32 frame_shift_ms = 10;
-  float vad_onset_threshold = 400;
-  float vad_offset_threshold = 50;
-  float vad_recover_threshold = 100;
+
+  Config conf("vad.conf");
+  float vad_onset_threshold = conf.GetFloat("onset_threshold");
+  float vad_offset_threshold = conf.GetFloat("offset_threshold");
+  float vad_recover_threshold = conf.GetFloat("recover_threshold");
+
   int frame_length_samples = frame_length_ms * (kSampleFreq/1000);
   int frame_shift_samples = frame_shift_ms * (kSampleFreq/1000);
   int vad_hangover_samples = vad_hangover_ms * (kSampleFreq/1000);

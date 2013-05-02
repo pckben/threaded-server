@@ -24,7 +24,7 @@ RemoteAudioSource::Read(VectorBase<BaseFloat> *data, uint32 *timeout) {
 
   // receive n_elem samples from the client
   PacketHeader header;
-  socket_->Receive((char *)&header, sizeof(PacketHeader));
+  socket_->Receive(&header, sizeof(PacketHeader));
   //printf("Receiving %d samples", header.payload_length / sizeof(BaseFloat));
 
   if (header.type != DATA_WAVE) {
@@ -32,7 +32,7 @@ RemoteAudioSource::Read(VectorBase<BaseFloat> *data, uint32 *timeout) {
          << "). Receive = " << header.type << endl;
     exit(1);
   }
-  socket_->Receive((char *)data->Data(), header.payload_length);
+  socket_->Receive(data->Data(), header.payload_length);
   //printf("\n");
   //printf("+");
 
