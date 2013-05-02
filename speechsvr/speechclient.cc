@@ -107,7 +107,7 @@ int main(int argc, char **argv) {
         //printf("Request received: %d samples\n", req.num_samples);
 
         const float *payload = wave + pos;
-        SendPacket(&client, DATA_WAVE, min(length-pos, req.num_samples) * sizeof(float), (void *)payload);
+        SendPacket(&client, DATA_WAVE, min(length-pos, req.num_samples) * sizeof(float), payload);
         pos += req.num_samples;
         //printf("-");
       }
@@ -117,7 +117,9 @@ int main(int argc, char **argv) {
         client.Receive(output, output_length);
         output[output_length] = 0;
         //printf("+");
-        cerr << trim1(string(output)) << " ";
+        string out = trim1(string(output));
+        if (out.length() > 0)
+          cerr << out << " ";
         if (end_utterance)
           cerr << endl << endl;
       }

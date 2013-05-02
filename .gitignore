@@ -1,3 +1,10 @@
 .*
 *.a
 *.o
+speechsvr/transcriptions
+speechsvr/speechclient
+speechsvr/speechsvr
+speechsvr/vad_*
+test/test_client
+test/test_server
+test/test_worker

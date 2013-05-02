@@ -6,6 +6,6 @@ using namespace speechsvr;
 
 void speechsvr::SendPacket(Socket *socket, PacketType type, int length, const void *payload) {
   PacketHeader header = { length, type };
-  socket->Send((const char *)&header, sizeof(PacketHeader));
-  socket->Send((const char *)payload, header.payload_length);
+  socket->Send(&header, sizeof(PacketHeader));
+  socket->Send(payload, header.payload_length);
 }
