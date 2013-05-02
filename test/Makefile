@@ -1,7 +1,7 @@
 include ../make.mk
 OBJ = test_server.o test_client.o test_worker.o
 OUT = test_server test_client test_worker
-LINK = ../threaded-server.a
+LINK = ../threaded-server.a -lpthread
 INCLUDES = -I ../src
 
 all: $(OUT)
