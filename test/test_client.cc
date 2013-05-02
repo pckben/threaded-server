@@ -1,6 +1,7 @@
 #include "Socket.h"
 #include <iostream>
-#include <cstdlib>
+#include <stdlib.h>
+#include <string.h>
 
 using namespace pckben;
 using namespace std;

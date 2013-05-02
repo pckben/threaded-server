@@ -5,7 +5,7 @@ OUT = speechsvr speechclient
 
 LIBS += ../threaded-server.a online-decoder/online-decoder.a \
 
-CCFLAGS += -I../src -Ionline-decoder \
+CCFLAGS += -I../src -Ionline-decoder
 
 .PHONY: all  $(SUBDIRS)
 

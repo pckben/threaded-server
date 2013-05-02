@@ -1,6 +1,7 @@
 .*
 *.a
 *.o
+*.log
 speechsvr/transcriptions
 speechsvr/speechclient
 speechsvr/speechsvr

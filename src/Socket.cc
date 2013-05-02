@@ -3,9 +3,9 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <netinet/in.h>
-#include <cstdio>
-#include <string>
-#include <cstdio>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 
 #define BUFFSIZE 32
 
