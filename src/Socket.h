@@ -2,6 +2,11 @@
 #define SOCKET_H
 
 namespace pckben {
+
+  #ifndef _WIN32 || _WIN64
+  typedef int SOCKET;
+  #endif
+
   // Wraps over a UNIX socket and provide
   // helper functions to send/receive data.
   class Socket {
@@ -10,7 +15,7 @@ namespace pckben {
      Socket();
      // Creates a Socket that wraps the given
      // UNIX socket.
-     Socket(int socket);
+     Socket(SOCKET socket);
 
      void Connect(char* server, int port);
 
@@ -18,7 +23,7 @@ namespace pckben {
      void Receive(void* data, int length);
 
    private:
-     int socket_;
+     SOCKET socket_;
   };
 }
 

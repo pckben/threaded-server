@@ -1,8 +1,18 @@
 #include "Socket.h"
+
+#ifdef _WIN32 || _WIN64
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#pragma comment(lib, "ws2_32.lib")
+
+#else
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <netinet/in.h>
+
+#endif
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -12,8 +22,29 @@
 using namespace pckben;
 using namespace std;
 
-Socket::Socket(int socket)
+#ifdef _WIN32 || _WIN64
+static bool __wsa_init_ = false;
+#endif
+
+Socket::Socket(SOCKET socket)
 : socket_(socket) {
+  #ifdef _WIN32 || _WIN64
+  if (!__wsa_init_) {
+		int wsaerr;
+		WORD wVersionRequested;
+		WSADATA wsaData;
+		wVersionRequested = MAKEWORD(2,2);
+		wsaerr = WSAStartup(wVersionRequested,&wsaData);
+		if (wsaerr != 0) {
+			state = CSOCKET_ERR; return;
+		}else
+		if (LOBYTE(wsaData.wVersion) != 2 || HIBYTE(wsaData.wVersion)!=2) {
+			state = CSOCKET_ERR; return;
+		} else { // success
+			wsa_initialized = true;
+		}
+  }
+  #endif
 }
 
 Socket::Socket() {

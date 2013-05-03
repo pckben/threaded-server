@@ -43,7 +43,7 @@ void Server::Start(int port) {
 
   // Run until cancelled
   while (1) {
-    int clientsock;
+    SOCKET clientsock;
     unsigned int clientlen = sizeof(clientaddr);
     // Wait for client connection
     if ((clientsock =
